@@ -20,11 +20,6 @@ const priorityLabels = {
   high: "Mon grand souhait",
 } as const;
 
-const euro = new Intl.NumberFormat("fr-FR", {
-  style: "currency",
-  currency: "EUR",
-});
-
 export function WishCard({
   wish,
   ownerName,
@@ -58,9 +53,6 @@ export function WishCard({
       {!isOwn && <p className="wish-owner">Pour {ownerName}</p>}
       {wish.description && <p className="wish-description">{wish.description}</p>}
       <div className="wish-details">
-        {wish.estimated_price_cents != null && (
-          <span>{euro.format(wish.estimated_price_cents / 100)}</span>
-        )}
         {wish.product_url && (
           <a href={wish.product_url} target="_blank" rel="noreferrer">
             Voir le cadeau <span aria-hidden="true">↗</span>

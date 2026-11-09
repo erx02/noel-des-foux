@@ -8,6 +8,11 @@
 - Tableau de famille, profils limités, nombre de souhaits par personne, ma liste,
   listes partagées, filtres et tris, ajout/modification/suppression, réservation
   et annulation de sa propre réservation.
+- Vue consolidée de tous les souhaits regroupés par membre, avec filtres et tri.
+- Formulaires sans saisie de prix ; les anciennes valeurs éventuellement
+  présentes en base ne sont ni affichées ni effacées lors de la modification.
+- Habillage hivernal/Noël, animations discrètes à l'arrivée des cartes et
+  éléments décoratifs en mouvement, neutralisés par `prefers-reduced-motion`.
 - Vue d'administration pour renommer la famille, ajouter un compte Auth déjà
   créé comme membre et retirer un membre. PostgreSQL reste l'autorité : le rôle
   de membre ne peut pas être modifié depuis l'interface.

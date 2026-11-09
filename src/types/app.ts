@@ -21,6 +21,5 @@ export interface WishInput {
   description: string | null;
   product_url: string | null;
   image_url: string | null;
-  estimated_price_cents: number | null;
   priority: Priority;
 }

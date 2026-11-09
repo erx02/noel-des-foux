@@ -21,11 +21,12 @@ import { ProfilePage } from "./ProfilePage";
 
 type View =
   | { page: "home" }
+  | { page: "all-wishes" }
   | { page: "list"; memberId: string }
   | { page: "admin" }
   | { page: "profile" };
 type PriorityFilter = "all" | "low" | "normal" | "high";
-type SortOrder = "newest" | "oldest" | "price";
+type SortOrder = "newest" | "oldest";
 
 const syncLabels = {
   syncing: "Synchronisation…",
@@ -105,13 +106,15 @@ export function App() {
           .filter((wish) => priorityFilter === "all" || wish.priority === priorityFilter)
           .sort((a, b) => {
             if (sortOrder === "oldest") return a.created_at.localeCompare(b.created_at);
-            if (sortOrder === "price") {
-              return (a.estimated_price_cents ?? Number.MAX_SAFE_INTEGER) -
-                (b.estimated_price_cents ?? Number.MAX_SAFE_INTEGER);
-            }
             return b.created_at.localeCompare(a.created_at);
           })
       : [];
+  const consolidatedWishes = [...workspace.wishes]
+    .filter((wish) => priorityFilter === "all" || wish.priority === priorityFilter)
+    .sort((a, b) => {
+      if (sortOrder === "oldest") return a.created_at.localeCompare(b.created_at);
+      return b.created_at.localeCompare(a.created_at);
+    });
 
   async function performAction(action: () => Promise<void>) {
     setActionError(null);
@@ -283,7 +286,6 @@ export function App() {
               >
                 <option value="newest">Plus récents</option>
                 <option value="oldest">Plus anciens</option>
-                <option value="price">Prix croissant</option>
               </select>
             </label>
           </div>
@@ -306,6 +308,108 @@ export function App() {
     );
   }
 
+  function renderConsolidatedPage() {
+    return (
+      <section className="page-section consolidated-page">
+        <div className="page-heading">
+          <div>
+            <button className="back-link" onClick={() => nav({ page: "home" })}>
+              ← Retour à la famille
+            </button>
+            <p className="eyebrow">Le grand carnet de Noël</p>
+            <h1>Tous les souhaits</h1>
+            <p className="muted">
+              Les idées de toute la famille, réunies au même endroit.
+            </p>
+          </div>
+          <span className="consolidated-total" aria-label={`${consolidatedWishes.length} souhaits au total`}>
+            <span aria-hidden="true">🎁</span>
+            {consolidatedWishes.length} {consolidatedWishes.length === 1 ? "souhait" : "souhaits"}
+          </span>
+        </div>
+        <div className="list-controls">
+          <label>
+            Filtrer par priorité
+            <select
+              value={priorityFilter}
+              onChange={(event) => setPriorityFilter(event.target.value as PriorityFilter)}
+            >
+              <option value="all">Toutes</option>
+              <option value="high">Élevée</option>
+              <option value="normal">Normale</option>
+              <option value="low">Faible</option>
+            </select>
+          </label>
+          <label>
+            Trier
+            <select
+              value={sortOrder}
+              onChange={(event) => setSortOrder(event.target.value as SortOrder)}
+            >
+              <option value="newest">Plus récents</option>
+              <option value="oldest">Plus anciens</option>
+            </select>
+          </label>
+        </div>
+        {showWishForm && view.page === "all-wishes" && (
+          <div className="form-panel">
+            <WishForm
+              wish={editingWish ?? undefined}
+              onSave={submitWish}
+              onCancel={() => {
+                setShowWishForm(false);
+                setEditingWish(null);
+              }}
+            />
+          </div>
+        )}
+        {loadedWorkspace.members.map((member) => {
+          const memberWishes = consolidatedWishes.filter(
+            (wish) => wish.owner_id === member.user_id,
+          );
+          const isOwn = member.user_id === userId;
+          return (
+            <section className="consolidated-member" key={member.user_id}>
+              <div className="consolidated-member-heading">
+                <span className="family-avatar" aria-hidden="true">
+                  {member.display_name.slice(0, 1).toUpperCase()}
+                </span>
+                <div>
+                  <h2>{member.display_name}{isOwn ? " · toi" : ""}</h2>
+                  <p>{memberWishes.length} {memberWishes.length === 1 ? "souhait" : "souhaits"}</p>
+                </div>
+                <div className="consolidated-member-actions">
+                  {isOwn && (
+                    <button
+                      type="button"
+                      className="button button-small button-primary"
+                      onClick={() => {
+                        setEditingWish(null);
+                        setShowWishForm(true);
+                      }}
+                    >
+                      + Ajouter
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="button button-small button-quiet"
+                    onClick={() => nav({ page: "list", memberId: member.user_id })}
+                  >
+                    Voir sa liste
+                  </button>
+                </div>
+              </div>
+              {memberWishes.length > 0
+                ? renderWishList(isOwn, member, memberWishes)
+                : <p className="consolidated-empty">Pas encore d’idée dans cette hotte.</p>}
+            </section>
+          );
+        })}
+      </section>
+    );
+  }
+
   const lastSyncedLabel = lastSyncedAt
     ? `Dernière mise à jour à ${dateTime.format(lastSyncedAt)}`
     : "En attente de synchronisation";
@@ -315,7 +419,7 @@ export function App() {
       <header className="topbar">
         <button className="brand-button" onClick={() => nav({ page: "home" })}>
           <span className="brand-mark small" aria-hidden="true">✦</span>
-          <span>{workspace.family.name}</span>
+          <span>La liste au Papa Noël des Foux</span>
         </button>
         <nav className="top-navigation" aria-label="Navigation principale">
           <button
@@ -329,6 +433,12 @@ export function App() {
             onClick={() => nav({ page: "list", memberId: userId })}
           >
             Ma liste
+          </button>
+          <button
+            className={view.page === "all-wishes" ? "nav-link active" : "nav-link"}
+            onClick={() => nav({ page: "all-wishes" })}
+          >
+            Tous les souhaits
           </button>
           {currentMember.role === "admin" && (
             <button
@@ -362,24 +472,37 @@ export function App() {
           <section className="page-section">
             <div className="welcome-panel">
               <div>
-                <p className="eyebrow">Noël se prépare ensemble</p>
-                <h1>Bonjour {currentMember.display_name} <span aria-hidden="true">☃</span></h1>
-                <p>Les petites idées font les grands sourires.</p>
+                <p className="eyebrow">La magie se prépare en famille</p>
+                <h1>Bonjour {currentMember.display_name} <span aria-hidden="true">✦</span></h1>
+                <p>Quelques idées, beaucoup de joie sous le sapin.</p>
               </div>
-              <span className="welcome-art" aria-hidden="true">🎄</span>
+              <div className="welcome-ornaments" aria-hidden="true">
+                <span className="ornament ornament-gold">✦</span>
+                <span className="ornament ornament-red">●</span>
+                <span className="ornament ornament-snow">❄</span>
+                <span className="welcome-art">🎄</span>
+              </div>
             </div>
             <div className="section-heading">
               <div>
                 <p className="eyebrow">Nos idées</p>
                 <h2>La famille</h2>
               </div>
-              <button
-                className="button button-quiet refresh-button"
-                onClick={() => void refresh()}
-                disabled={status === "syncing"}
-              >
-                ↻ Actualiser
-              </button>
+              <div className="home-actions">
+                <button
+                  className="button button-quiet refresh-button"
+                  onClick={() => void refresh()}
+                  disabled={status === "syncing"}
+                >
+                  ↻ Actualiser
+                </button>
+                <button
+                  className="button button-primary"
+                  onClick={() => nav({ page: "all-wishes" })}
+                >
+                  <span aria-hidden="true">🎁</span> Vue d’ensemble
+                </button>
+              </div>
             </div>
             <div className="family-grid">
               {workspace.members.map((member) => {
@@ -404,6 +527,7 @@ export function App() {
             </div>
           </section>
         )}
+        {view.page === "all-wishes" && renderConsolidatedPage()}
         {view.page === "list" && renderListPage()}
         {view.page === "admin" && currentMember.role === "admin" && (
           <AdminPage

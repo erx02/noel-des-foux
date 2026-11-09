@@ -21,9 +21,9 @@ export function LoginPage() {
   return (
     <main className="login-shell">
       <section className="login-card" aria-labelledby="login-title">
-        <div className="brand-mark" aria-hidden="true">✦</div>
-        <p className="eyebrow">Un Noël à partager</p>
-        <h1 id="login-title">Les cadeaux de la famille</h1>
+        <div className="brand-mark" aria-hidden="true">❄</div>
+        <p className="eyebrow">La hotte de la famille</p>
+        <h1 id="login-title">La liste au Papa Noël des Foux</h1>
         <p className="muted">
           Connecte-toi pour retrouver les idées de cadeaux de tes proches.
         </p>

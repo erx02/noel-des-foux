@@ -1,4 +1,4 @@
-# Les cadeaux de la famille
+# La liste au Papa Noël des Foux
 
 Petite application privée pour partager des listes de cadeaux en famille.
 L'interface React/TypeScript est compilée en fichiers statiques avec Vite et
@@ -10,6 +10,8 @@ utilisé.
 
 - React + TypeScript strict + Vite ; styles CSS sans bibliothèque d'interface.
 - Supabase Auth, PostgreSQL et Realtime.
+- Interface festive responsive avec listes par membre et vue consolidée des
+  souhaits de la famille ; le formulaire n'inclut pas de prix.
 - PostgreSQL RLS et contraintes sont l'autorité de sécurité. Le code du
   navigateur n'est pas une barrière et les règles doivent résister à des appels
   REST directs.

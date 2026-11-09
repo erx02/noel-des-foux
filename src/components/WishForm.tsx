@@ -13,11 +13,6 @@ export function WishForm({ wish, onSave, onCancel }: WishFormProps) {
   const [description, setDescription] = useState(wish?.description ?? "");
   const [productUrl, setProductUrl] = useState(wish?.product_url ?? "");
   const [imageUrl, setImageUrl] = useState(wish?.image_url ?? "");
-  const [priceEuros, setPriceEuros] = useState(
-    wish?.estimated_price_cents == null
-      ? ""
-      : (wish.estimated_price_cents / 100).toFixed(2),
-  );
   const [priority, setPriority] = useState<Priority>(wish?.priority ?? "normal");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -27,11 +22,6 @@ export function WishForm({ wish, onSave, onCancel }: WishFormProps) {
     setDescription(wish?.description ?? "");
     setProductUrl(wish?.product_url ?? "");
     setImageUrl(wish?.image_url ?? "");
-    setPriceEuros(
-      wish?.estimated_price_cents == null
-        ? ""
-        : (wish.estimated_price_cents / 100).toFixed(2),
-    );
     setPriority(wish?.priority ?? "normal");
     setError(null);
   }, [wish]);
@@ -45,7 +35,6 @@ export function WishForm({ wish, onSave, onCancel }: WishFormProps) {
         description,
         productUrl,
         imageUrl,
-        priceEuros,
         priority,
       });
       setBusy(true);
@@ -103,25 +92,8 @@ export function WishForm({ wish, onSave, onCancel }: WishFormProps) {
           onChange={(event) => setImageUrl(event.target.value)}
         />
       </label>
-      <div className="form-row">
-        <label>
-          Prix estimé
-          <span className="input-with-suffix">
-            <input
-              type="number"
-              min="0.01"
-              max="100000"
-              step="0.01"
-              inputMode="decimal"
-              placeholder="Ex. 25"
-              value={priceEuros}
-              onChange={(event) => setPriceEuros(event.target.value)}
-            />
-            <span aria-hidden="true">€</span>
-          </span>
-        </label>
-        <label>
-          Priorité
+      <label className="priority-field">
+        Priorité
           <select
             value={priority}
             onChange={(event) => {
@@ -135,8 +107,7 @@ export function WishForm({ wish, onSave, onCancel }: WishFormProps) {
             <option value="normal">Normale</option>
             <option value="high">Élevée</option>
           </select>
-        </label>
-      </div>
+      </label>
       {error && <p className="form-error" role="alert">{error}</p>}
       <div className="button-row">
         <button type="button" className="button button-quiet" onClick={onCancel}>

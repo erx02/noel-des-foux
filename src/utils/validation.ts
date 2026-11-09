@@ -29,7 +29,6 @@ export function validateWish(values: {
   description: string;
   productUrl: string;
   imageUrl: string;
-  priceEuros: string;
   priority: string;
 }): WishInput {
   const title = values.title.trim();
@@ -39,18 +38,6 @@ export function validateWish(values: {
   }
   if (description.length > 2000) {
     throw new Error("La description ne peut pas dépasser 2 000 caractères.");
-  }
-
-  let estimatedPriceCents: number | null = null;
-  if (values.priceEuros.trim()) {
-    const price = Number(values.priceEuros.replace(",", "."));
-    if (!Number.isFinite(price) || price <= 0 || price > 100000) {
-      throw new Error("Le prix doit être compris entre 0,01 € et 100 000 €.");
-    }
-    estimatedPriceCents = Math.round(price * 100);
-    if (estimatedPriceCents < 1 || estimatedPriceCents > 10000000) {
-      throw new Error("Le prix indiqué n'est pas valide.");
-    }
   }
 
   const priorities: Priority[] = ["low", "normal", "high"];
@@ -64,7 +51,6 @@ export function validateWish(values: {
     description: description || null,
     product_url: parseOptionalUrl(values.productUrl, "Le lien du cadeau"),
     image_url: parseOptionalUrl(values.imageUrl, "Le lien de l’image"),
-    estimated_price_cents: estimatedPriceCents,
     priority,
   };
 }
