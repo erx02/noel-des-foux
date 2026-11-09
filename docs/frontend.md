@@ -6,17 +6,22 @@
   formulaire d'inscription publique. L'administrateur crée/invite les comptes
   depuis le tableau de bord Supabase.
 - Tableau de famille, profils limités, nombre de souhaits par personne, ma liste,
-  listes partagées, filtres et tris, ajout/modification/suppression, réservation
+  listes partagées, tri, ajout/modification/suppression, réservation
   et annulation de sa propre réservation.
-- Vue consolidée de tous les souhaits regroupés par membre, avec filtres et tri.
+- Vue consolidée de tous les souhaits regroupés par membre, avec tri.
 - Formulaires sans saisie de prix ; les anciennes valeurs éventuellement
   présentes en base ne sont ni affichées ni effacées lors de la modification.
+- La priorité des souhaits n'est plus utilisée dans l'interface ; la colonne SQL
+  historique est conservée pour éviter une migration destructive.
+- Chaque membre peut choisir un avatar illustré parmi les options proposées.
+  L'identifiant de l'avatar est enregistré sur son profil Supabase et partagé
+  avec les membres de la même famille.
 - Habillage hivernal/Noël, animations discrètes à l'arrivée des cartes et
   éléments décoratifs en mouvement, neutralisés par `prefers-reduced-motion`.
 - Vue d'administration pour renommer la famille, ajouter un compte Auth déjà
   créé comme membre et retirer un membre. PostgreSQL reste l'autorité : le rôle
   de membre ne peut pas être modifié depuis l'interface.
-- Profil permettant de modifier le nom affiché et de se déconnecter. Le bouton
+- Profil permettant de modifier le nom affiché, l'avatar et de se déconnecter. Le bouton
   de déconnexion est également accessible depuis chaque page authentifiée.
 - Formulaires accessibles avec validations client et contraintes SQL
   complémentaires. Aucun HTML utilisateur n'est rendu comme HTML ; l'image
@@ -55,9 +60,15 @@ L'URL doit être hébergée sur un domaine Supabase standard (`*.supabase.co`) p
 correspondre à la CSP actuellement définie dans `index.html`.
 
 La vérification `npm run build` (TypeScript strict et build Vite) passe. Les
-tests pgTAP passent également en local avec `npx supabase test db` : 25
-assertions. Ces tests s'exécutent sur une stack locale et ne remplacent pas une
-revue de configuration du projet Supabase de production.
+tests pgTAP couvrent aussi les permissions d'avatar et les valeurs autorisées.
+Ces tests s'exécutent sur une stack locale et ne remplacent pas une revue de
+configuration du projet Supabase de production.
+
+La migration d'avatars ajoute une colonne à `family_members` avec une liste
+autorisée contrôlée par PostgreSQL. Les membres modifient leur propre profil ;
+les administrateurs conservent les droits de gestion des profils de leur
+famille définis par la politique RLS. Appliquer la migration Supabase avant de
+publier cette version du frontend.
 
 ## Risques et limites avant la phase 4
 

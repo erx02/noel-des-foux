@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { MemberAvatar } from "../components/MemberAvatar";
 import { WishCard } from "../components/WishCard";
 import { WishForm } from "../components/WishForm";
 import { useAuth } from "../hooks/useAuth";
@@ -12,7 +13,7 @@ import {
   renameFamily,
   reserveWish,
   saveWish,
-  updateDisplayName,
+  updateFamilyMemberProfile,
 } from "../services/workspace";
 import type { FamilyMember, Wish, WishInput } from "../types/app";
 import { AdminPage } from "./AdminPage";
@@ -25,7 +26,6 @@ type View =
   | { page: "list"; memberId: string }
   | { page: "admin" }
   | { page: "profile" };
-type PriorityFilter = "all" | "low" | "normal" | "high";
 type SortOrder = "newest" | "oldest";
 
 const syncLabels = {
@@ -45,7 +45,6 @@ export function App() {
   const [view, setView] = useState<View>({ page: "home" });
   const [editingWish, setEditingWish] = useState<Wish | null>(null);
   const [showWishForm, setShowWishForm] = useState(false);
-  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const [busyWishId, setBusyWishId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -99,18 +98,15 @@ export function App() {
     view.page === "list"
       ? workspace.wishes.filter((wish) => wish.owner_id === view.memberId)
       : [];
-  const wishesForControls = view.page === "list" ? targetWishes : [];
   const displayedWishes =
     view.page === "list"
       ? [...targetWishes]
-          .filter((wish) => priorityFilter === "all" || wish.priority === priorityFilter)
           .sort((a, b) => {
             if (sortOrder === "oldest") return a.created_at.localeCompare(b.created_at);
             return b.created_at.localeCompare(a.created_at);
           })
       : [];
   const consolidatedWishes = [...workspace.wishes]
-    .filter((wish) => priorityFilter === "all" || wish.priority === priorityFilter)
     .sort((a, b) => {
       if (sortOrder === "oldest") return a.created_at.localeCompare(b.created_at);
       return b.created_at.localeCompare(a.created_at);
@@ -167,7 +163,6 @@ export function App() {
     setActionError(null);
     setEditingWish(null);
     setShowWishForm(false);
-    setPriorityFilter("all");
     setView(viewToSet);
   }
 
@@ -264,20 +259,8 @@ export function App() {
             />
           </div>
         )}
-        {wishesForControls.length > 0 && (
+        {targetWishes.length > 0 && (
           <div className="list-controls">
-            <label>
-              Filtrer par priorité
-              <select
-                value={priorityFilter}
-                onChange={(event) => setPriorityFilter(event.target.value as PriorityFilter)}
-              >
-                <option value="all">Toutes</option>
-                <option value="high">Élevée</option>
-                <option value="normal">Normale</option>
-                <option value="low">Faible</option>
-              </select>
-            </label>
             <label>
               Trier
               <select
@@ -290,20 +273,7 @@ export function App() {
             </label>
           </div>
         )}
-        {displayedWishes.length === 0 && targetWishes.length > 0 ? (
-          <div className="empty-state">
-            <h2>Aucun souhait pour ce filtre</h2>
-            <button
-              type="button"
-              className="button button-quiet"
-              onClick={() => setPriorityFilter("all")}
-            >
-              Effacer le filtre
-            </button>
-          </div>
-        ) : (
-          renderWishList(isOwn, targetMember, displayedWishes)
-        )}
+        {renderWishList(isOwn, targetMember, displayedWishes)}
       </section>
     );
   }
@@ -328,18 +298,6 @@ export function App() {
           </span>
         </div>
         <div className="list-controls">
-          <label>
-            Filtrer par priorité
-            <select
-              value={priorityFilter}
-              onChange={(event) => setPriorityFilter(event.target.value as PriorityFilter)}
-            >
-              <option value="all">Toutes</option>
-              <option value="high">Élevée</option>
-              <option value="normal">Normale</option>
-              <option value="low">Faible</option>
-            </select>
-          </label>
           <label>
             Trier
             <select
@@ -371,9 +329,7 @@ export function App() {
           return (
             <section className="consolidated-member" key={member.user_id}>
               <div className="consolidated-member-heading">
-                <span className="family-avatar" aria-hidden="true">
-                  {member.display_name.slice(0, 1).toUpperCase()}
-                </span>
+                <MemberAvatar avatarId={member.avatar_id} size="member" />
                 <div>
                   <h2>{member.display_name}{isOwn ? " · toi" : ""}</h2>
                   <p>{memberWishes.length} {memberWishes.length === 1 ? "souhait" : "souhaits"}</p>
@@ -454,7 +410,7 @@ export function App() {
           onClick={() => nav({ page: "profile" })}
           aria-label={`Profil de ${currentMember.display_name}`}
         >
-          <span className="avatar" aria-hidden="true">{currentMember.display_name.slice(0, 1).toUpperCase()}</span>
+          <MemberAvatar avatarId={currentMember.avatar_id} size="profile" />
           <span className="profile-name">{currentMember.display_name}</span>
         </button>
         <button
@@ -513,9 +469,7 @@ export function App() {
                     key={member.user_id}
                     onClick={() => nav({ page: "list", memberId: member.user_id })}
                   >
-                    <span className="family-avatar" aria-hidden="true">
-                      {member.display_name.slice(0, 1).toUpperCase()}
-                    </span>
+                    <MemberAvatar avatarId={member.avatar_id} size="member" />
                     <span className="family-card-content">
                       <strong>{member.display_name}{member.user_id === userId ? " · toi" : ""}</strong>
                       <span>{count} {count > 1 ? "souhaits" : "souhait"}</span>
@@ -547,7 +501,9 @@ export function App() {
           <ProfilePage
             member={currentMember}
             email={session.user.email ?? ""}
-            onSave={(name) => performAction(() => updateDisplayName(userId, name))}
+            onSave={(name, avatarId) =>
+              performAction(() => updateFamilyMemberProfile(userId, name, avatarId))
+            }
             onSignOut={signOut}
           />
         )}

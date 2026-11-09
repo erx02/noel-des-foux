@@ -1,3 +1,5 @@
+import type { AvatarId } from "../constants/avatars";
+
 export type Json =
   | string
   | number
@@ -26,6 +28,7 @@ export interface Database {
           user_id: string;
           family_id: string;
           display_name: string;
+          avatar_id: AvatarId;
           role: "admin" | "member";
           created_at: string;
         },
@@ -33,10 +36,11 @@ export interface Database {
           user_id: string;
           family_id: string;
           display_name: string;
+          avatar_id?: AvatarId;
           role?: "admin" | "member";
           created_at?: string;
         },
-        { display_name?: string }
+        { display_name?: string; avatar_id?: AvatarId }
       >;
       wishes: Table<
         {

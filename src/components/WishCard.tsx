@@ -14,12 +14,6 @@ interface WishCardProps {
   busy?: boolean;
 }
 
-const priorityLabels = {
-  low: "Pourquoi pas",
-  normal: "J’aimerais bien",
-  high: "Mon grand souhait",
-} as const;
-
 export function WishCard({
   wish,
   ownerName,
@@ -39,16 +33,13 @@ export function WishCard({
 
   return (
     <article className="wish-card">
-      <div className="wish-card-top">
-        <span className={`priority priority-${wish.priority}`}>
-          {priorityLabels[wish.priority]}
-        </span>
-        {!isOwn && (
+      {!isOwn && (
+        <div className="wish-card-top">
           <span className={`availability ${reservation ? "availability-taken" : ""}`}>
             {reservation ? "Déjà réservé" : "Disponible"}
           </span>
-        )}
-      </div>
+        </div>
+      )}
       <h3>{wish.title}</h3>
       {!isOwn && <p className="wish-owner">Pour {ownerName}</p>}
       {wish.description && <p className="wish-description">{wish.description}</p>}

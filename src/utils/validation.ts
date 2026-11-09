@@ -1,4 +1,4 @@
-import type { WishInput, Priority } from "../types/app";
+import type { WishInput } from "../types/app";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -29,7 +29,6 @@ export function validateWish(values: {
   description: string;
   productUrl: string;
   imageUrl: string;
-  priority: string;
 }): WishInput {
   const title = values.title.trim();
   const description = values.description.trim();
@@ -40,17 +39,10 @@ export function validateWish(values: {
     throw new Error("La description ne peut pas dépasser 2 000 caractères.");
   }
 
-  const priorities: Priority[] = ["low", "normal", "high"];
-  const priority = priorities.find((candidate) => candidate === values.priority);
-  if (!priority) {
-    throw new Error("Choisis une priorité valide.");
-  }
-
   return {
     title,
     description: description || null,
     product_url: parseOptionalUrl(values.productUrl, "Le lien du cadeau"),
     image_url: parseOptionalUrl(values.imageUrl, "Le lien de l’image"),
-    priority,
   };
 }

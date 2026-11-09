@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import type { Priority, Wish, WishInput } from "../types/app";
+import type { Wish, WishInput } from "../types/app";
 import { validateWish } from "../utils/validation";
 
 interface WishFormProps {
@@ -13,7 +13,6 @@ export function WishForm({ wish, onSave, onCancel }: WishFormProps) {
   const [description, setDescription] = useState(wish?.description ?? "");
   const [productUrl, setProductUrl] = useState(wish?.product_url ?? "");
   const [imageUrl, setImageUrl] = useState(wish?.image_url ?? "");
-  const [priority, setPriority] = useState<Priority>(wish?.priority ?? "normal");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -22,7 +21,6 @@ export function WishForm({ wish, onSave, onCancel }: WishFormProps) {
     setDescription(wish?.description ?? "");
     setProductUrl(wish?.product_url ?? "");
     setImageUrl(wish?.image_url ?? "");
-    setPriority(wish?.priority ?? "normal");
     setError(null);
   }, [wish]);
 
@@ -35,7 +33,6 @@ export function WishForm({ wish, onSave, onCancel }: WishFormProps) {
         description,
         productUrl,
         imageUrl,
-        priority,
       });
       setBusy(true);
       await onSave(input, wish?.id);
@@ -91,22 +88,6 @@ export function WishForm({ wish, onSave, onCancel }: WishFormProps) {
           value={imageUrl}
           onChange={(event) => setImageUrl(event.target.value)}
         />
-      </label>
-      <label className="priority-field">
-        Priorité
-          <select
-            value={priority}
-            onChange={(event) => {
-              const value = event.target.value;
-              if (value === "low" || value === "normal" || value === "high") {
-                setPriority(value);
-              }
-            }}
-          >
-            <option value="low">Faible</option>
-            <option value="normal">Normale</option>
-            <option value="high">Élevée</option>
-          </select>
       </label>
       {error && <p className="form-error" role="alert">{error}</p>}
       <div className="button-row">

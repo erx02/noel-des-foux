@@ -1,4 +1,5 @@
 import type { RealtimeChannel } from "@supabase/supabase-js";
+import { isAvatarId } from "../constants/avatars";
 import { supabase } from "../lib/supabase";
 import type { Workspace, WishInput } from "../types/app";
 import { isUuid } from "../utils/validation";
@@ -103,15 +104,20 @@ export async function cancelReservation(wishId: string, userId: string): Promise
   if (error) throw error;
 }
 
-export async function updateDisplayName(userId: string, displayName: string): Promise<void> {
+export async function updateFamilyMemberProfile(
+  userId: string,
+  displayName: string,
+  avatarId: string,
+): Promise<void> {
   if (!isUuid(userId)) throw new Error("Identifiant de compte invalide.");
   const trimmed = displayName.trim();
   if (trimmed.length < 1 || trimmed.length > 80) {
     throw new Error("Le prénom doit contenir entre 1 et 80 caractères.");
   }
+  if (!isAvatarId(avatarId)) throw new Error("Choisis un avatar valide.");
   const { error } = await client()
     .from("family_members")
-    .update({ display_name: trimmed })
+    .update({ display_name: trimmed, avatar_id: avatarId })
     .eq("user_id", userId);
   if (error) throw error;
 }

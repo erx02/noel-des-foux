@@ -1,4 +1,5 @@
 import type { User } from "@supabase/supabase-js";
+import type { AvatarId } from "../constants/avatars";
 import type { Database } from "./database";
 
 export type Family = Database["public"]["Tables"]["families"]["Row"];
@@ -14,12 +15,12 @@ export interface Workspace {
 }
 
 export type AppUser = User;
-export type Priority = Wish["priority"];
 
 export interface WishInput {
   title: string;
   description: string | null;
   product_url: string | null;
   image_url: string | null;
-  priority: Priority;
 }
+
+export type { AvatarId };

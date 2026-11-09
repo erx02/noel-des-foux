@@ -105,7 +105,7 @@ select id from test_fixture_ids where label = 'wish_a1';
 
 select set_config('request.jwt.claim.sub', '', true);
 
-select plan(25);
+select plan(30);
 
 select ok(not has_schema_privilege('anon', 'public', 'usage'),
           'anon has no public schema access');
@@ -128,6 +128,25 @@ select is((select count(*)::integer from public.families
 select is((select count(*)::integer from public.wishes
            where id = (select id from test_fixture_ids where label = 'wish_b1')),
           0, 'family A cannot read family B wishes');
+select is((select avatar_id from public.family_members where user_id = auth.uid()),
+          'santa', 'members receive the default avatar');
+select lives_ok(
+  $$update public.family_members set avatar_id = 'reindeer' where user_id = auth.uid()$$,
+  'a member can change their own avatar'
+);
+select is((select avatar_id from public.family_members where user_id = auth.uid()),
+          'reindeer', 'the selected avatar is saved');
+with changed as (
+  update public.family_members set avatar_id = 'tree'
+  where user_id = '20000000-0000-4000-8000-000000000001'
+  returning 1
+)
+select is((select count(*)::integer from changed), 0,
+          'a member cannot change another family avatar');
+select throws_ok(
+  $$update public.family_members set avatar_id = 'not-an-avatar' where user_id = auth.uid()$$,
+  '23514', null, 'the database rejects avatar values outside the approved set'
+);
 with changed as (
   update public.families set name = 'Tentative'
   where id = (select id from test_fixture_ids where label = 'family_b')

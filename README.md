@@ -11,7 +11,8 @@ utilisé.
 - React + TypeScript strict + Vite ; styles CSS sans bibliothèque d'interface.
 - Supabase Auth, PostgreSQL et Realtime.
 - Interface festive responsive avec listes par membre et vue consolidée des
-  souhaits de la famille ; le formulaire n'inclut pas de prix.
+  souhaits de la famille, avatars illustrés personnalisables et formulaires
+  adaptés aux écrans mobiles ; les souhaits n'ont pas de priorité ni de prix.
 - PostgreSQL RLS et contraintes sont l'autorité de sécurité. Le code du
   navigateur n'est pas une barrière et les règles doivent résister à des appels
   REST directs.
@@ -25,6 +26,9 @@ utilisé.
 Voir [l'architecture et le modèle de menace](./docs/architecture.md),
 [les politiques et tests SQL](./docs/security-policies.md) et
 [les notes du frontend](./docs/frontend.md).
+
+La migration `20261109120000_family_member_avatars.sql` doit être appliquée au
+projet Supabase avant de déployer la version qui permet de choisir un avatar.
 
 ## Prérequis
 

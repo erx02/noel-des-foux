@@ -133,16 +133,16 @@ button:disabled { cursor: wait; opacity: 0.68; }
   font-weight: 700;
 }
 .topbar-signout:hover { color: var(--red); text-decoration: underline; }
-.avatar, .family-avatar {
+.member-avatar {
   display: grid;
   flex: 0 0 auto;
   place-items: center;
   border-radius: 50%;
   background: var(--silver-light);
-  color: var(--green-dark);
-  font-weight: 750;
+  box-shadow: inset 0 0 0 1px rgba(184, 137, 46, .22);
 }
-.avatar { width: 36px; height: 36px; }
+.member-avatar-profile { width: 36px; height: 36px; font-size: 20px; }
+.member-avatar-member { width: 48px; height: 48px; font-size: 26px; }
 
 .page-section { width: min(1120px, calc(100% - 40px)); margin: 0 auto; padding: 48px 0 64px; }
 .page-section h1 { margin: 4px 0 10px; font-size: clamp(30px, 5vw, 44px); letter-spacing: -0.035em; }
@@ -249,7 +249,6 @@ button:disabled { cursor: wait; opacity: 0.68; }
   border-color: #d9bf83;
   box-shadow: 0 7px 20px rgba(91, 62, 44, 0.09);
 }
-.family-avatar { width: 48px; height: 48px; font-size: 18px; }
 .family-card-content { display: grid; flex: 1; gap: 5px; }
 .family-card-content > span { color: var(--muted); font-size: 13px; }
 .family-card-arrow { color: var(--red); font-size: 20px; }
@@ -275,7 +274,7 @@ button:disabled { cursor: wait; opacity: 0.68; }
 .wish-card:nth-child(5) { animation-delay: 200ms; }
 .wish-card:nth-child(6) { animation-delay: 250ms; }
 .wish-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.priority, .availability {
+.availability {
   display: inline-flex;
   min-height: 25px;
   align-items: center;
@@ -286,8 +285,6 @@ button:disabled { cursor: wait; opacity: 0.68; }
   font-size: 11px;
   font-weight: 750;
 }
-.priority-high { background: #f7e9dc; color: #8b4e23; }
-.priority-low { background: #eef0eb; color: #59645d; }
 .availability { background: #e7f2e9; color: #285d3e; }
 .availability-taken { background: #f3e9e3; color: #794a36; }
 .wish-card h3 { margin: 17px 0 3px; font-size: 20px; line-height: 1.3; overflow-wrap: anywhere; }
@@ -366,11 +363,11 @@ button:disabled { cursor: wait; opacity: 0.68; }
   border-radius: 10px;
   background: #fff;
   color: #342c2b;
+  font-size: 16px;
 }
 .stack-form textarea { min-height: 100px; resize: vertical; }
 .stack-form input:read-only { background: #f4f4ef; color: #637067; }
 .field-hint { color: #758078; font-size: 12px; font-weight: 450; line-height: 1.5; }
-.priority-field { max-width: 320px; }
 .button-row { display: flex; justify-content: end; gap: 10px; }
 .button-row.centered { justify-content: center; }
 .form-error { margin: 0; color: #9c3732; font-size: 14px; line-height: 1.5; }
@@ -378,6 +375,28 @@ button:disabled { cursor: wait; opacity: 0.68; }
 .narrow-section { max-width: 720px; }
 .profile-card { margin-top: 24px; }
 .sign-out-button { margin-top: 20px; }
+.profile-avatar-preview { display: flex; align-items: center; gap: 12px; margin: 20px 4px 0; color: var(--muted); font-size: 14px; }
+.profile-avatar-preview .member-avatar { width: 52px; height: 52px; font-size: 29px; }
+.avatar-picker { min-width: 0; margin: 0; padding: 0; border: 0; }
+.avatar-picker legend { margin-bottom: 9px; color: #493a38; font-size: 13px; font-weight: 700; }
+.avatar-options { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.avatar-option {
+  display: grid;
+  min-width: 0;
+  min-height: 78px;
+  place-items: center;
+  gap: 3px;
+  padding: 7px 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  color: #4a4645;
+  font-size: 11px;
+  text-align: center;
+}
+.avatar-option > span:first-child { font-size: 25px; line-height: 1; }
+.avatar-option[aria-pressed="true"] { border-color: var(--red); background: var(--red-soft); box-shadow: 0 0 0 2px rgba(173, 41, 53, .12); }
+.avatar-option:focus-visible { outline-offset: 2px; }
 
 .admin-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 28px; }
 .admin-grid .profile-card { margin: 0; }
@@ -560,7 +579,6 @@ button:disabled { cursor: wait; opacity: 0.68; }
   .wish-actions { gap: 8px; padding-top: 16px; }
   .wish-actions > .button { flex: 1 1 120px; min-height: 44px; padding: 0 10px; }
   .form-panel, .profile-card { padding: 18px; border-radius: 16px; }
-  .priority-field { max-width: none; }
   .admin-grid { gap: 12px; }
   .member-admin-list li { align-items: flex-start; }
   .member-admin-list li .button { min-height: 44px; }
@@ -571,6 +589,8 @@ button:disabled { cursor: wait; opacity: 0.68; }
   .login-card > .muted { margin-bottom: 20px; }
   .login-footnote { margin-top: 16px; }
   .login-shell::after, .app-shell::after { font-size: 23px; letter-spacing: 14vw; }
+  .avatar-options { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .avatar-option { min-height: 72px; font-size: 10px; }
 }
 
 @media (max-width: 360px) {
