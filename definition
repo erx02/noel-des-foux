@@ -1,0 +1,371 @@
+Tu es un architecte logiciel senior et un développeur full-stack spécialisé en sécurité applicative.
+Ta mission est de concevoir et générer une petite plateforme web privée permettant aux membres d’une famille de créer et partager leurs listes de cadeaux de Noël.
+L’application doit être simple, chaleureuse, accessible sur Internet, utilisable sur mobile et ordinateur, et fonctionner autant que possible avec un frontend statique.
+========================
+ARCHITECTURE IMPOSÉE
+========================
+Utilise exclusivement l’architecture suivante :
+Frontend : React + TypeScript + Vite.
+Interface : Tailwind CSS ou CSS simple, sans bibliothèque inutile.
+Hébergement du frontend : GitHub Pages.
+Backend managé : Supabase.
+Base de données : PostgreSQL fourni par Supabase.
+Authentification : Supabase Auth.
+Synchronisation : Supabase Realtime, avec rafraîchissement de secours.
+Dépôt GitHub compatible avec GitHub Actions pour le déploiement.
+Aucun serveur Node.js permanent.
+Aucun hébergement AWS, VPS ou service payant.
+L’application doit rester compatible avec les offres gratuites de GitHub Pages et Supabase.
+Le frontend doit être un ensemble de fichiers statiques générés par Vite.
+Toutes les opérations dynamiques doivent passer directement du navigateur vers Supabase, sous le contrôle strict de PostgreSQL Row Level Security.
+Ne jamais considérer le frontend comme une frontière de sécurité.
+========================
+OBJECTIFS FONCTIONNELS
+========================
+Chaque utilisateur doit pouvoir :
+se connecter avec son propre compte ;
+appartenir à une seule famille dans la première version ;
+consulter les membres de sa famille ;
+créer sa liste de cadeaux ;
+ajouter, modifier et supprimer ses propres souhaits ;
+indiquer pour chaque souhait :
+un titre ;
+une description facultative ;
+une URL facultative ;
+un prix estimé facultatif ;
+une priorité : faible, normale ou élevée ;
+une image facultative, de préférence via une URL distante ;
+consulter les souhaits des autres membres de sa famille ;
+réserver un cadeau demandé par un autre membre ;
+annuler sa propre réservation.
+Le propriétaire d’un souhait :
+doit pouvoir consulter et modifier son souhait ;
+ne doit jamais voir qui a réservé son cadeau ;
+ne doit pas pouvoir réserver son propre cadeau ;
+ne doit pas pouvoir déduire l’identité de la personne ayant réservé le cadeau via l’API, Supabase Realtime, les erreurs, les métadonnées ou les réponses réseau.
+Les autres membres de la famille doivent pouvoir voir :
+qu’un cadeau est disponible ;
+qu’un cadeau est déjà réservé ;
+leur propre réservation ;
+éventuellement le nom de la personne ayant réservé, uniquement si cette personne n’est pas le propriétaire du souhait.
+Pour privilégier la surprise, utilise par défaut cette règle :
+le propriétaire du souhait ne voit même pas son statut de réservation.
+========================
+INTERFACE UTILISATEUR
+========================
+Créer une interface sobre, festive et accessible.
+Pages principales :
+Page de connexion
+Page d’accueil de la famille
+Page “Ma liste”
+Page affichant la liste d’un autre membre
+Page d’administration minimale, visible uniquement pour les administrateurs
+Page de profil et de déconnexion
+La page d’accueil doit afficher :
+le nom de la famille ;
+les membres ;
+le nombre de souhaits de chaque personne ;
+un accès rapide à chaque liste ;
+la date de dernière synchronisation ;
+un indicateur discret “Synchronisé”, “Synchronisation…” ou “Hors connexion”.
+La page “Ma liste” doit permettre :
+d’ajouter un souhait ;
+de modifier un souhait ;
+de supprimer un souhait après confirmation ;
+de réordonner ou filtrer les souhaits ;
+d’afficher des états de chargement et d’erreur explicites.
+La liste d’un autre membre doit permettre :
+de consulter ses souhaits ;
+de réserver un cadeau ;
+d’annuler uniquement sa propre réservation ;
+de distinguer clairement un cadeau disponible d’un cadeau déjà réservé ;
+de ne jamais révéler une information interdite par les règles de sécurité.
+L’interface doit être :
+responsive à partir de 320 px ;
+utilisable au clavier ;
+compatible avec les lecteurs d’écran ;
+dotée de labels explicites ;
+dotée d’un contraste suffisant ;
+respectueuse de prefers-reduced-motion ;
+dépourvue d’animations excessives.
+Toutes les dates, devises et chaînes visibles doivent être facilement localisables.
+La langue par défaut est le français et la devise par défaut est l’euro.
+========================
+MODÈLE DE DONNÉES
+========================
+Conçois au minimum les tables suivantes.
+Table families :
+id : UUID, clé primaire
+name : texte non vide
+created_at : timestamptz
+created_by : UUID référençant auth.users
+Table family_members :
+family_id : UUID
+user_id : UUID
+display_name : texte
+role : enum ou contrainte limitée à “admin” et “member”
+created_at : timestamptz
+clé primaire composite ou contrainte unique sur family_id et user_id
+Table wishes :
+id : UUID, clé primaire
+family_id : UUID
+owner_id : UUID
+title : varchar(150), obligatoire
+description : varchar(2000), facultatif
+product_url : texte, facultatif
+image_url : texte, facultatif
+estimated_price_cents : entier positif, facultatif
+priority : valeur limitée à low, normal ou high
+created_at : timestamptz
+updated_at : timestamptz
+Table reservations :
+id : UUID, clé primaire
+wish_id : UUID
+family_id : UUID
+reserved_by : UUID
+created_at : timestamptz
+contrainte unique sur wish_id afin qu’un souhait ne puisse avoir qu’une réservation active
+Tous les identifiants doivent être générés côté base avec gen_random_uuid().
+Utilise des clés étrangères, des contraintes CHECK, des contraintes UNIQUE et des index appropriés.
+Ne fais pas confiance au frontend pour fournir correctement family_id, owner_id ou reserved_by.
+Lorsque cela est possible, ces valeurs doivent être dérivées de auth.uid(), du souhait concerné ou d’une fonction SQL security definer soigneusement limitée.
+Toute fonction security definer doit :
+fixer explicitement search_path ;
+vérifier auth.uid() ;
+vérifier l’appartenance à la famille ;
+éviter le SQL dynamique ;
+accorder EXECUTE uniquement aux rôles nécessaires ;
+ne jamais exposer plus de données que nécessaire.
+========================
+SÉCURITÉ OBLIGATOIRE
+========================
+La sécurité est une exigence bloquante.
+Applique une stratégie “deny by default”.
+Active Row Level Security sur toutes les tables exposées.
+Révoque les privilèges inutiles des rôles anon et authenticated.
+N’ajoute jamais une politique générale du type :
+USING (true)
+ou :
+WITH CHECK (true)
+N’accorde jamais l’accès à toutes les lignes simplement parce que l’utilisateur est authentifié.
+Le rôle anon ne doit pouvoir :
+lire aucune donnée familiale ;
+écrire aucune donnée ;
+appeler aucune fonction métier sensible.
+Le rôle authenticated ne doit accéder qu’aux données de sa famille.
+Un membre peut :
+lire les données générales de sa famille ;
+lire les profils limités des membres de sa famille ;
+créer un souhait uniquement pour lui-même ;
+modifier uniquement ses propres souhaits ;
+supprimer uniquement ses propres souhaits ;
+réserver uniquement le souhait d’un autre membre de sa famille ;
+annuler uniquement sa propre réservation.
+Un administrateur peut :
+administrer les membres de sa propre famille ;
+modifier le nom de sa famille ;
+ne jamais administrer une autre famille.
+Le propriétaire d’un souhait ne doit pas pouvoir lire la ligne de réservation associée à son souhait.
+Cette interdiction doit être appliquée par PostgreSQL RLS, et pas seulement en masquant un bouton ou une propriété dans React.
+Attention aux fuites indirectes :
+ne pas inclure reserved_by dans un payload Realtime destiné au propriétaire du souhait ;
+ne pas retourner une erreur différente permettant de deviner l’existence d’une réservation ;
+ne pas exposer les réservations dans une vue non sécurisée ;
+ne pas exposer les identités via des jointures côté client ;
+ne pas utiliser de compteur permettant au propriétaire de déduire un état interdit ;
+ne pas placer de données sensibles dans les logs du navigateur ;
+ne pas transmettre de secret dans une URL.
+Crée si nécessaire une vue ou une fonction RPC retournant uniquement un statut calculé et autorisé, sans exposer reserved_by.
+Les INSERT et UPDATE doivent utiliser WITH CHECK en plus de USING.
+Toutes les politiques doivent vérifier à nouveau l’appartenance à la famille.
+========================
+AUTHENTIFICATION
+========================
+Utilise Supabase Auth.
+Principes obligatoires :
+un compte individuel par membre ;
+aucune authentification par mot de passe familial partagé ;
+confirmation de l’adresse e-mail activée si compatible avec le flux retenu ;
+inscription publique désactivée ou contrôlée ;
+accès par invitation uniquement ;
+aucune information familiale accessible avant authentification ;
+session persistée uniquement via le mécanisme officiel Supabase ;
+déconnexion disponible partout ;
+redirection correcte après expiration de session ;
+aucune donnée sensible stockée manuellement dans localStorage.
+Si l’invitation sécurisée exige une opération privilégiée, ne jamais la réaliser depuis le frontend avec la clé service_role.
+Dans cette première version, autorise un administrateur technique à créer ou inviter les utilisateurs depuis le tableau de bord Supabase.
+Explique clairement cette limitation dans le README plutôt que d’introduire une clé secrète dans le navigateur.
+========================
+GESTION DES CLÉS
+========================
+Le frontend peut contenir uniquement :
+VITE_SUPABASE_URL
+VITE_SUPABASE_ANON_KEY
+Ces valeurs ne doivent pas être présentées comme secrètes.
+La sécurité doit fonctionner même si un attaquant connaît ces deux valeurs et appelle directement l’API Supabase sans utiliser l’interface.
+Interdictions absolues :
+ne jamais utiliser SUPABASE_SERVICE_ROLE_KEY dans React ;
+ne jamais committer la service_role key ;
+ne jamais intégrer un secret dans le bundle Vite ;
+ne jamais protéger une opération uniquement avec une variable d’environnement frontend ;
+ne jamais placer de données réelles de la famille dans le dépôt GitHub ;
+ne jamais placer de données personnelles dans les fixtures de démonstration.
+Créer un fichier .env.example avec uniquement des valeurs factices.
+Ajouter .env et les fichiers locaux sensibles dans .gitignore.
+========================
+VALIDATION DES DONNÉES
+========================
+Effectue une validation côté interface pour l’expérience utilisateur, mais répète obligatoirement les contrôles dans PostgreSQL.
+Contraintes attendues :
+titre entre 1 et 150 caractères après trim ;
+description limitée à 2 000 caractères ;
+prix positif et raisonnablement plafonné ;
+priorité limitée aux valeurs autorisées ;
+URLs limitées à http ou https, avec préférence pour https ;
+refus des schémas javascript:, data: et file: ;
+aucun HTML utilisateur rendu avec dangerouslySetInnerHTML ;
+affichage du texte avec l’échappement React normal ;
+UUID validés ;
+suppression par cascade utilisée uniquement lorsqu’elle est intentionnelle.
+Ne charge pas automatiquement des images provenant de domaines arbitraires si cela révèle l’adresse IP ou le comportement d’un utilisateur.
+Prévois soit une image facultative désactivable, soit un affichage avec politique de referrer stricte.
+========================
+SYNCHRONISATION
+========================
+Utilise Supabase Realtime pour synchroniser les changements entre les membres.
+Le frontend reste statique :
+aucun serveur applicatif permanent ne doit être nécessaire.
+À la connexion :
+récupérer la session ;
+récupérer le profil et la famille autorisée ;
+charger les souhaits autorisés ;
+charger uniquement les informations de réservation autorisées ;
+ouvrir les abonnements Realtime strictement nécessaires.
+Lors d’un événement Realtime :
+ne jamais faire confiance au payload pour autoriser une action ;
+mettre à jour l’état local ;
+relancer si nécessaire une requête sécurisée pour obtenir la version autorisée ;
+supprimer proprement les abonnements lors de la déconnexion ou du démontage du composant.
+Prévoir un mécanisme de secours :
+rechargement lors du retour de l’onglet au premier plan ;
+rechargement lors du retour de la connexion réseau ;
+bouton manuel “Actualiser” ;
+revalidation périodique raisonnable, par exemple toutes les 60 secondes si Realtime est indisponible.
+Gérer les conflits de réservation grâce à la contrainte UNIQUE sur wish_id.
+Si deux personnes réservent simultanément le même souhait :
+une seule opération doit réussir ;
+la seconde doit recevoir un message neutre : “Ce cadeau vient d’être réservé” ;
+aucune identité ne doit être révélée ;
+l’interface doit se resynchroniser automatiquement.
+Le frontend peut utiliser un cache en mémoire, mais ne doit pas être la source de vérité.
+PostgreSQL est la seule source de vérité.
+========================
+PROTECTION DU FRONTEND
+========================
+Configurer autant que possible :
+Content-Security-Policy ;
+Referrer-Policy: no-referrer ou strict-origin-when-cross-origin ;
+X-Content-Type-Options: nosniff ;
+protections contre l’intégration dans une iframe ;
+dépendances limitées et maintenues ;
+aucune ressource JavaScript chargée depuis un CDN non maîtrisé ;
+aucune télémétrie ;
+aucun tracker ;
+aucune publicité ;
+aucun cookie tiers.
+Comme GitHub Pages ne permet pas toujours de définir tous les en-têtes HTTP personnalisés, ajoute également une CSP via une balise meta lorsque cela est pertinent et documente honnêtement ses limites.
+Ne promets jamais une sécurité absolue.
+========================
+TESTS DE SÉCURITÉ
+========================
+Créer des tests démontrant les règles suivantes :
+un visiteur anonyme ne peut lire aucune ligne ;
+un utilisateur de la famille A ne peut pas lire la famille B ;
+un utilisateur de la famille A ne peut pas modifier les souhaits de la famille B ;
+un membre ne peut pas modifier le souhait d’un autre membre ;
+un membre ne peut pas créer un souhait au nom d’un autre ;
+un membre ne peut pas falsifier family_id ;
+un membre ne peut pas réserver son propre souhait ;
+un membre ne peut pas supprimer la réservation d’un autre ;
+le propriétaire d’un souhait ne peut pas lire reserved_by ;
+une requête REST directe ne contourne pas les règles ;
+la clé anon seule ne donne accès à aucune donnée ;
+deux réservations concurrentes du même souhait ne peuvent pas réussir ;
+un administrateur d’une famille ne peut pas administrer une autre famille.
+Fournir un script SQL de tests ou des tests automatisés reproductibles.
+Ne considère pas les tests d’interface comme une preuve suffisante des autorisations.
+========================
+CODE ET QUALITÉ
+========================
+Utilise :
+TypeScript strict ;
+composants React simples ;
+aucune utilisation injustifiée de any ;
+gestion centralisée et neutre des erreurs ;
+hooks bien séparés pour l’authentification, les souhaits et la synchronisation ;
+variables et fonctions aux noms explicites ;
+dépendances minimales ;
+aucun framework backend inutile.
+Prévoir cette structure ou une structure équivalente :
+src/
+components/
+pages/
+hooks/
+services/
+types/
+utils/
+lib/
+supabase.ts
+supabase/
+migrations/
+tests/
+seed.example.sql
+.github/
+workflows/
+deploy-pages.yml
+Ne place aucune donnée personnelle réelle dans seed.example.sql.
+========================
+LIVRABLES ATTENDUS
+========================
+Génère le projet progressivement, sans omettre la sécurité.
+Commence par produire :
+l’architecture et les choix techniques ;
+le modèle de menace ;
+le schéma SQL complet ;
+les contraintes et index ;
+les politiques RLS complètes ;
+les fonctions SQL éventuellement nécessaires ;
+les tests d’isolation et d’autorisation.
+Ensuite seulement, génère :
+le frontend React ;
+la gestion de l’authentification ;
+la synchronisation Realtime ;
+les états d’erreur et de chargement ;
+le workflow GitHub Actions ;
+le README de configuration et de déploiement ;
+une checklist de revue de sécurité avant publication.
+Pour chaque politique RLS, explique :
+qui peut effectuer l’opération ;
+quelles lignes sont concernées ;
+pourquoi un utilisateur d’une autre famille est bloqué ;
+comment les colonnes sensibles sont protégées ;
+comment la politique résiste à un appel direct à l’API.
+========================
+MÉTHODE DE GÉNÉRATION
+========================
+Ne génère pas immédiatement toute l’application dans une seule réponse.
+Travaille dans cet ordre :
+Phase 1 : architecture, modèle de menace et matrice des autorisations.
+Phase 2 : SQL, RLS et tests de sécurité.
+Phase 3 : frontend, authentification et synchronisation.
+Phase 4 : déploiement, documentation et revue finale.
+À la fin de chaque phase :
+vérifie les exigences ;
+liste les risques restant ouverts ;
+demande explicitement une validation avant de continuer ;
+ne remplace jamais une exigence de sécurité par un simple contrôle visuel.
+Si une demande est incompatible avec GitHub Pages, Supabase ou une sécurité robuste, signale-le clairement au lieu de produire un contournement dangereux.
+Avant chaque proposition, pose-toi cette question :
+“Cette sécurité fonctionne-t-elle encore si un utilisateur malveillant ignore totalement l’interface React, connaît l’URL Supabase et la clé anon, et appelle directement l’API REST ou Realtime ?”
+Si la réponse est non, corrige l’architecture avant de générer le code.

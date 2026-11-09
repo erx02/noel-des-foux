@@ -1,0 +1,3 @@
+-- Intentionally empty: never commit real family data or personal demo fixtures.
+-- To provision the first family, use the operator-only procedure in README.md.
+-- Reproducible synthetic authorization tests live in tests/database_security.test.sql.
