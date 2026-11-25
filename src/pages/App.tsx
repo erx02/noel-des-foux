@@ -1,6 +1,6 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { MemberAvatar } from "../components/MemberAvatar";
-import { WishCard } from "../components/WishCard";
+import { WishCard, type WishTagColor } from "../components/WishCard";
 import { WishForm } from "../components/WishForm";
 import { useAuth } from "../hooks/useAuth";
 import { useWorkspace } from "../hooks/useWorkspace";
@@ -94,6 +94,28 @@ export function App() {
   }
 
   const loadedWorkspace = workspace;
+  const tagColors: WishTagColor[] = [
+    "berry",
+    "forest",
+    "ocean",
+    "sunshine",
+    "violet",
+    "coral",
+    "teal",
+    "slate",
+  ];
+  const listColorByOwner = new Map<string, number>();
+  const childWishListTagColors = new Map<string, WishTagColor>();
+  for (const list of [...loadedWorkspace.childWishLists].sort(
+    (a, b) =>
+      a.owner_id.localeCompare(b.owner_id) ||
+      a.created_at.localeCompare(b.created_at) ||
+      a.id.localeCompare(b.id),
+  )) {
+    const colorIndex = listColorByOwner.get(list.owner_id) ?? 0;
+    childWishListTagColors.set(list.id, tagColors[colorIndex % tagColors.length]);
+    listColorByOwner.set(list.owner_id, colorIndex + 1);
+  }
   const viewingOwnList = view.page === "list" && view.memberId === userId;
   const targetMember =
     view.page === "list"
@@ -246,6 +268,11 @@ export function App() {
                   (list) => list.id === wish.child_list_id,
                 )?.name
               }
+              groupColor={
+                wish.child_list_id
+                  ? childWishListTagColors.get(wish.child_list_id)
+                  : undefined
+              }
               currentUserId={userId}
               isOwn={isOwn}
               reservation={reservation}
@@ -297,7 +324,7 @@ export function App() {
                   setShowChildListForm((shown) => !shown);
                 }}
               >
-                + Sous-liste enfant
+                + Sous-liste
               </button>
               <button
                 className="button button-primary"
@@ -621,7 +648,7 @@ export function App() {
                       <span>{count} {count > 1 ? "souhaits" : "souhait"}</span>
                       {childListCount > 0 && (
                         <span>
-                          {childListCount} sous-liste{childListCount > 1 ? "s" : ""} pour enfant{childListCount > 1 ? "s" : ""}
+                          {childListCount} sous-liste{childListCount > 1 ? "s" : ""}
                         </span>
                       )}
                     </span>

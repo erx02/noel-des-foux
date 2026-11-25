@@ -308,6 +308,28 @@ button:disabled { cursor: wait; opacity: 0.68; }
 .availability-taken { background: #e4ebf1; color: #455e72; }
 .wish-card h3 { margin: 17px 0 3px; font-size: 20px; line-height: 1.3; overflow-wrap: anywhere; }
 .wish-owner { margin: 2px 0 10px; color: var(--teal); font-size: 13px; font-weight: 700; }
+.wish-list-tag {
+  display: inline-flex;
+  align-self: flex-start;
+  max-width: 100%;
+  margin: 3px 0 10px;
+  padding: 5px 10px;
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wish-list-tag-berry { border-color: #e6bdc9; background: #fae9ee; color: #78374b; }
+.wish-list-tag-forest { border-color: #bfd9c5; background: #e8f3e9; color: #315d3b; }
+.wish-list-tag-ocean { border-color: #b7d2e2; background: #e5f1f7; color: #285671; }
+.wish-list-tag-sunshine { border-color: #e5d3a9; background: #faf2dd; color: #69501d; }
+.wish-list-tag-violet { border-color: #d3c4e6; background: #f0eafa; color: #594474; }
+.wish-list-tag-coral { border-color: #e7c5b5; background: #faece5; color: #794831; }
+.wish-list-tag-teal { border-color: #b8d9d4; background: #e5f2f0; color: #2f5d57; }
+.wish-list-tag-slate { border-color: #c9d2dc; background: #edf1f5; color: #46596c; }
 .wish-description { margin: 8px 0 0; color: #526b7c; line-height: 1.6; overflow-wrap: anywhere; white-space: pre-wrap; }
 .wish-details { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; color: #526b7c; font-size: 13px; }
 .wish-details a { color: #285e80; font-weight: 700; overflow-wrap: anywhere; }

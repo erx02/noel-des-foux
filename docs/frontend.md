@@ -23,8 +23,9 @@
   de membre ne peut pas être modifié depuis l'interface.
 - Un membre peut créer et supprimer des sous-listes nommées pour ses enfants,
   puis affecter chaque souhait à sa liste personnelle ou à l'une de ces
-  sous-listes. La suppression d'une sous-liste demande confirmation et supprime
-  également ses souhaits et réservations.
+  sous-listes. Les cartes des souhaits portent un badge coloré correspondant à
+  leur sous-liste. La suppression d'une sous-liste demande confirmation et
+  supprime également ses souhaits et réservations.
 - Profil permettant de modifier le nom affiché, l'avatar et de se déconnecter. Le bouton
   de déconnexion est également accessible depuis chaque page authentifiée.
 - Formulaires accessibles avec validations client et contraintes SQL

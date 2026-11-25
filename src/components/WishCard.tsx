@@ -1,9 +1,20 @@
 import type { FamilyMember, Reservation, Wish } from "../types/app";
 
+export type WishTagColor =
+  | "berry"
+  | "forest"
+  | "ocean"
+  | "sunshine"
+  | "violet"
+  | "coral"
+  | "teal"
+  | "slate";
+
 interface WishCardProps {
   wish: Wish;
   ownerName: string;
   groupLabel?: string;
+  groupColor?: WishTagColor;
   currentUserId: string;
   isOwn: boolean;
   reservation: Reservation | undefined;
@@ -19,6 +30,7 @@ export function WishCard({
   wish,
   ownerName,
   groupLabel,
+  groupColor,
   currentUserId,
   isOwn,
   reservation,
@@ -43,7 +55,11 @@ export function WishCard({
         </div>
       )}
       <h3>{wish.title}</h3>
-      {(groupLabel || !isOwn) && (
+      {groupLabel ? (
+        <span className={`wish-list-tag wish-list-tag-${groupColor ?? "berry"}`}>
+          {groupLabel}
+        </span>
+      ) : !isOwn && (
         <p className="wish-owner">Pour {groupLabel ?? ownerName}</p>
       )}
       {wish.description && <p className="wish-description">{wish.description}</p>}
