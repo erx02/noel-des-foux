@@ -198,6 +198,7 @@ button:disabled { cursor: wait; opacity: 0.68; }
 }
 .section-heading .eyebrow { margin-bottom: 6px; }
 .page-heading { align-items: center; margin: 0 0 28px; }
+.list-heading-actions { display: flex; flex-wrap: wrap; gap: 9px; }
 .page-heading .eyebrow { margin-top: 20px; }
 .back-link {
   border: 0;
@@ -260,6 +261,18 @@ button:disabled { cursor: wait; opacity: 0.68; }
 .family-card-arrow { color: var(--blue); font-size: 20px; }
 
 .list-controls { display: flex; flex-wrap: wrap; gap: 14px; margin: 12px 0 22px; }
+.wish-list-group { margin-top: 30px; }
+.wish-list-group > h2 { margin-bottom: 14px; }
+.wish-list-group-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.wish-list-group-heading h2 { font-size: 21px; }
+.wish-list-group-heading p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+.child-list-form { max-width: 700px; margin: 0 auto; }
 .list-controls label { display: grid; gap: 6px; color: #526b7c; font-size: 12px; font-weight: 700; }
 .list-controls select { min-width: 150px; }
 .wish-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
@@ -574,7 +587,8 @@ button:disabled { cursor: wait; opacity: 0.68; }
   .ornament-red { right: 0; }
   .section-heading, .page-heading { align-items: stretch; }
   .section-heading, .page-heading { flex-direction: column; gap: 14px; }
-  .page-heading > .button { width: 100%; }
+  .page-heading > .button, .list-heading-actions { width: 100%; }
+  .list-heading-actions .button { flex: 1 1 150px; }
   .page-heading .eyebrow { margin-top: 13px; }
   .consolidated-page > .page-heading { gap: 12px; }
   .consolidated-total { align-self: flex-start; }

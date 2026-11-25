@@ -2,6 +2,8 @@
 
 Migration : `supabase/migrations/20261109000000_family_gift_lists.sql`.
 Tests : `supabase/tests/database_security.test.sql`.
+Les sous-listes sont ajoutées par
+`supabase/migrations/20261125180000_child_wish_lists.sql`.
 
 ## Tables, contraintes et index
 
@@ -11,11 +13,17 @@ Tests : `supabase/tests/database_security.test.sql`.
   limité à `admin`/`member`, profil limité au nom d'affichage et à un identifiant
   d'avatar illustré de la liste autorisée dans la migration
   `20261109120000_family_member_avatars.sql`.
+- `child_wish_lists` : une sous-liste appartient à un compte et à sa famille ;
+  son propriétaire ne peut créer, renommer ou supprimer que ses propres listes.
+  Une clé étrangère composite lie chaque souhait à la sous-liste, au compte et
+  à la famille correspondants. Supprimer une sous-liste supprime ses souhaits
+  et réservations par cascade après confirmation dans l'interface.
 - `wishes` : propriétaire et famille liés à une appartenance existante ; titre
   1–150 caractères après trim ; description maximale de 2 000 caractères ;
   URL facultatives HTTP/HTTPS uniquement ; prix de 1 à 10 000 000 centimes
   (100 000 € maximum) ; la priorité historique reste contrainte à `low`,
-  `normal` ou `high`, mais n'est plus utilisée par l'interface.
+  `normal` ou `high`, mais n'est plus utilisée par l'interface. `child_list_id`
+  est facultatif pour garder les anciennes listes personnelles intactes.
   L'identifiant et l'horodatage sont générés par la base.
 - `reservations` : une réservation au maximum par souhait grâce à la contrainte
   unique sur `wish_id`. Une clé étrangère composite lie le réservataire et le
@@ -67,6 +75,10 @@ Un appel REST direct utilise ces mêmes privilèges et politiques.
 | `wishes_insert_self` | Un membre crée un souhait pour lui-même. | `family_id` provient de la fonction de défaut et `owner_id` de `auth.uid()` ; les colonnes d'identité ne sont pas insérables. `WITH CHECK` vérifie les deux ainsi que l'appartenance. |
 | `wishes_update_owner` | Seul le propriétaire modifie ses champs de souhait. | `USING` vérifie la ligne avant modification ; `WITH CHECK` répète l'identité et l'appartenance après modification. Les colonnes d'identité et `updated_at` ne sont pas modifiables par le client. |
 | `wishes_delete_owner` | Seul le propriétaire supprime son souhait. | Vérification du propriétaire et de la famille en base, y compris via API directe. |
+| `child_wish_lists_select_family` | Les membres consultent les sous-listes de leur famille. | Les autres familles restent isolées par RLS. |
+| `child_wish_lists_insert_owner` | Un membre crée une sous-liste pour son propre compte. | `family_id` et `owner_id` sont dérivés de l'appelant ; les colonnes d'identité ne sont pas insérables. |
+| `child_wish_lists_update_owner` | Seul le propriétaire renomme sa sous-liste. | La politique vérifie le propriétaire avant et après modification ; seul `name` est modifiable. |
+| `child_wish_lists_delete_owner` | Seul le propriétaire supprime sa sous-liste. | La famille et le propriétaire sont vérifiés en base ; les souhaits et réservations associées sont supprimés par cascade. |
 | `reservations_select_non_owner_family` | Membres de la famille lisent la réservation des souhaits appartenant à un autre membre. | La ligne entière, y compris `reserved_by`, est masquée au propriétaire par RLS. Les réservations sont exclues de Realtime ; aucun endpoint/vu RPC ne contourne ce filtrage. |
 | `reservations_insert_other_member_wish` | Membre réserve le souhait libre d'un autre membre de sa famille. | `reserved_by` et `family_id` sont dérivés en trigger ; `WITH CHECK` revérifie l'appartenance et le propriétaire du souhait. L'unicité sur `wish_id` arbitre les courses. |
 | `reservations_delete_own` | Seul le réservataire annule sa réservation sur le souhait d'un autre membre. | `USING` vérifie le réservataire, la famille et le propriétaire du souhait. Pas de privilège UPDATE. |
@@ -78,8 +90,8 @@ ne doit être utilisé que par l'opérateur, jamais dans le frontend.
 
 ## Realtime et confidentialité
 
-La publication Supabase contient `families`, `family_members` et `wishes`, mais
-pas `reservations`. La présence, l'absence ou le moment d'un événement de
+La publication Supabase contient `families`, `family_members`,
+`child_wish_lists` et `wishes`, mais pas `reservations`. La présence, l'absence ou le moment d'un événement de
 réservation pourrait révéler un état interdit même sans inclure `reserved_by`.
 Le frontend devra donc revalider les réservations via des requêtes RLS lors du
 rafraîchissement périodique, au retour réseau/onglet et sur demande. Realtime
@@ -104,9 +116,10 @@ privilèges anonymes, l'isolation inter-familles, la propriété des souhaits,
 l'immutabilité des identités, la confidentialité des réservations et l'unicité
 qui arbitre deux réservations concurrentes.
 
-Les 30 assertions pgTAP couvrent aussi le choix d'avatar : valeur par défaut,
+Les 37 assertions pgTAP couvrent aussi le choix d'avatar : valeur par défaut,
 modification du profil, isolation entre familles et contrainte sur les valeurs
-admises. Le test d'unicité démontre la garantie atomique en base mais ne
+admises, ainsi que l'isolation et l'affectation des sous-listes d'enfants. Le
+test d'unicité démontre la garantie atomique en base mais ne
 remplace pas un test de charge multi-session du flux complet. Les tests de
 sécurité en local ne remplacent pas une vérification des réglages Auth et API du
 projet de production.

@@ -44,5 +44,6 @@ export function validateWish(values: {
     description: description || null,
     product_url: parseOptionalUrl(values.productUrl, "Le lien du cadeau"),
     image_url: parseOptionalUrl(values.imageUrl, "Le lien de l’image"),
+    child_list_id: null,
   };
 }

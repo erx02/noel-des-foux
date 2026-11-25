@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { MemberAvatar } from "../components/MemberAvatar";
 import { WishCard } from "../components/WishCard";
 import { WishForm } from "../components/WishForm";
@@ -7,7 +7,9 @@ import { useWorkspace } from "../hooks/useWorkspace";
 import {
   addFamilyMember,
   cancelReservation,
+  createChildWishList,
   readableError,
+  removeChildWishList,
   removeFamilyMember,
   removeWish,
   renameFamily,
@@ -45,6 +47,9 @@ export function App() {
   const [view, setView] = useState<View>({ page: "home" });
   const [editingWish, setEditingWish] = useState<Wish | null>(null);
   const [showWishForm, setShowWishForm] = useState(false);
+  const [newWishChildListId, setNewWishChildListId] = useState<string | null>(null);
+  const [showChildListForm, setShowChildListForm] = useState(false);
+  const [childListName, setChildListName] = useState("");
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const [busyWishId, setBusyWishId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -128,6 +133,29 @@ export function App() {
     await performAction(() => saveWish(input, wishId));
   }
 
+  async function submitChildList(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    try {
+      await performAction(() => createChildWishList(childListName));
+      setChildListName("");
+      setShowChildListForm(false);
+    } catch {
+      // The action error is displayed in the persistent alert.
+    }
+  }
+
+  async function deleteChildList(listId: string, name: string, wishCount: number) {
+    const contents = wishCount
+      ? ` ainsi que ses ${wishCount} souhait${wishCount > 1 ? "s" : ""} et leurs réservations`
+      : "";
+    if (!window.confirm(`Supprimer la sous-liste « ${name} »${contents} ?`)) return;
+    try {
+      await performAction(() => removeChildWishList(listId));
+    } catch {
+      // The action error is displayed in the persistent alert.
+    }
+  }
+
   async function deleteWish(wish: Wish) {
     if (!window.confirm(`Supprimer « ${wish.title} » de ta liste ?`)) return;
     try {
@@ -163,10 +191,18 @@ export function App() {
     setActionError(null);
     setEditingWish(null);
     setShowWishForm(false);
+    setNewWishChildListId(null);
+    setShowChildListForm(false);
     setView(viewToSet);
   }
 
-  function renderWishList(isOwn: boolean, owner: FamilyMember, wishes: Wish[]) {
+  function renderWishList(
+    isOwn: boolean,
+    owner: FamilyMember,
+    wishes: Wish[],
+    groupLabel?: string,
+    childListId?: string,
+  ) {
     if (wishes.length === 0) {
       return (
         <div className="empty-state">
@@ -174,7 +210,15 @@ export function App() {
           <h2>{isOwn ? "Ta liste est encore vide" : "Pas encore de souhait"}</h2>
           <p>{isOwn ? "Ajoute une première idée, même toute petite." : "Cette personne n’a pas encore partagé d’idée."}</p>
           {isOwn && (
-            <button className="button button-primary" onClick={() => setShowWishForm(true)}>
+            <button
+              className="button button-primary"
+              onClick={() => {
+                setEditingWish(null);
+                setNewWishChildListId(childListId ?? null);
+                setShowChildListForm(false);
+                setShowWishForm(true);
+              }}
+            >
               Ajouter un souhait
             </button>
           )}
@@ -193,7 +237,15 @@ export function App() {
             <WishCard
               key={wish.id}
               wish={wish}
-              ownerName={owner.display_name}
+              ownerName={
+                loadedWorkspace.childWishLists.find((list) => list.id === wish.child_list_id)
+                  ?.name ?? owner.display_name
+              }
+              groupLabel={
+                groupLabel ?? loadedWorkspace.childWishLists.find(
+                  (list) => list.id === wish.child_list_id,
+                )?.name
+              }
               currentUserId={userId}
               isOwn={isOwn}
               reservation={reservation}
@@ -236,21 +288,69 @@ export function App() {
             </p>
           </div>
           {isOwn && (
-            <button
-              className="button button-primary"
-              onClick={() => {
-                setEditingWish(null);
-                setShowWishForm(true);
-              }}
-            >
-              + Ajouter un souhait
-            </button>
+            <div className="list-heading-actions">
+              <button
+                className="button button-quiet"
+                onClick={() => {
+                  setShowWishForm(false);
+                  setEditingWish(null);
+                  setShowChildListForm((shown) => !shown);
+                }}
+              >
+                + Sous-liste enfant
+              </button>
+              <button
+                className="button button-primary"
+                onClick={() => {
+                  setEditingWish(null);
+                  setNewWishChildListId(null);
+                  setShowChildListForm(false);
+                  setShowWishForm(true);
+                }}
+              >
+                + Ajouter un souhait
+              </button>
+            </div>
           )}
         </div>
+        {showChildListForm && isOwn && (
+          <div className="form-panel">
+            <form className="stack-form child-list-form" onSubmit={(event) => void submitChildList(event)}>
+              <h2>Créer une sous-liste</h2>
+              <p className="field-hint">
+                Donne-lui le prénom de ton enfant. Ses cadeaux seront séparés de ta liste.
+              </p>
+              <label>
+                Prénom ou nom de la sous-liste
+                <input
+                  autoFocus
+                  maxLength={80}
+                  required
+                  value={childListName}
+                  onChange={(event) => setChildListName(event.target.value)}
+                />
+              </label>
+              <div className="button-row">
+                <button
+                  type="button"
+                  className="button button-quiet"
+                  onClick={() => setShowChildListForm(false)}
+                >
+                  Annuler
+                </button>
+                <button className="button button-primary">Créer la sous-liste</button>
+              </div>
+            </form>
+          </div>
+        )}
         {showWishForm && isOwn && (
           <div className="form-panel">
             <WishForm
               wish={editingWish ?? undefined}
+              defaultChildListId={newWishChildListId}
+              childWishLists={loadedWorkspace.childWishLists.filter(
+                (list) => list.owner_id === userId,
+              )}
               onSave={submitWish}
               onCancel={() => {
                 setShowWishForm(false);
@@ -273,7 +373,44 @@ export function App() {
             </label>
           </div>
         )}
-        {renderWishList(isOwn, targetMember, displayedWishes)}
+        {isOwn && loadedWorkspace.childWishLists.some((list) => list.owner_id === userId) ? (
+          <>
+            <section className="wish-list-group">
+              <h2>Ma liste</h2>
+              {renderWishList(
+                true,
+                targetMember,
+                displayedWishes.filter((wish) => wish.child_list_id === null),
+              )}
+            </section>
+            {loadedWorkspace.childWishLists
+              .filter((list) => list.owner_id === userId)
+              .sort((a, b) => a.created_at.localeCompare(b.created_at))
+              .map((list) => {
+                const listWishes = displayedWishes.filter(
+                  (wish) => wish.child_list_id === list.id,
+                );
+                return (
+                  <section className="wish-list-group" key={list.id}>
+                    <div className="wish-list-group-heading">
+                      <div>
+                        <h2>{list.name}</h2>
+                        <p>{listWishes.length} {listWishes.length === 1 ? "souhait" : "souhaits"}</p>
+                      </div>
+                      <button
+                        type="button"
+                        className="button button-small button-danger"
+                        onClick={() => void deleteChildList(list.id, list.name, listWishes.length)}
+                      >
+                        Supprimer la sous-liste
+                      </button>
+                    </div>
+                    {renderWishList(true, targetMember, listWishes, list.name, list.id)}
+                  </section>
+                );
+              })}
+          </>
+        ) : renderWishList(isOwn, targetMember, displayedWishes)}
       </section>
     );
   }
@@ -313,6 +450,10 @@ export function App() {
           <div className="form-panel">
             <WishForm
               wish={editingWish ?? undefined}
+              defaultChildListId={newWishChildListId}
+              childWishLists={loadedWorkspace.childWishLists.filter(
+                (list) => list.owner_id === userId,
+              )}
               onSave={submitWish}
               onCancel={() => {
                 setShowWishForm(false);
@@ -341,6 +482,7 @@ export function App() {
                       className="button button-small button-primary"
                       onClick={() => {
                         setEditingWish(null);
+                        setNewWishChildListId(null);
                         setShowWishForm(true);
                       }}
                     >
@@ -463,6 +605,10 @@ export function App() {
             <div className="family-grid">
               {workspace.members.map((member) => {
                 const count = workspace.wishes.filter((wish) => wish.owner_id === member.user_id).length;
+                const childListCount =
+                  member.user_id === userId
+                    ? loadedWorkspace.childWishLists.filter((list) => list.owner_id === userId).length
+                    : 0;
                 return (
                   <button
                     className="family-card"
@@ -473,6 +619,11 @@ export function App() {
                     <span className="family-card-content">
                       <strong>{member.display_name}{member.user_id === userId ? " · toi" : ""}</strong>
                       <span>{count} {count > 1 ? "souhaits" : "souhait"}</span>
+                      {childListCount > 0 && (
+                        <span>
+                          {childListCount} sous-liste{childListCount > 1 ? "s" : ""} pour enfant{childListCount > 1 ? "s" : ""}
+                        </span>
+                      )}
                     </span>
                     <span className="family-card-arrow" aria-hidden="true">→</span>
                   </button>

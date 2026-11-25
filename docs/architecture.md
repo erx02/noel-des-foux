@@ -73,6 +73,10 @@ du tableau de bord et ne doit jamais être utilisée par l'application statique.
   `anon`.
 - Chaque compte est lié à une seule famille. Les filtres d'appartenance sont
   réévalués en base et non pris depuis les paramètres du navigateur.
+- Un membre peut créer des sous-listes d'enfants rattachées à son propre compte.
+  Les souhaits de ces sous-listes restent visibles par la famille, mais les
+  écritures et suppressions sont limitées à leur propriétaire via RLS et une
+  clé étrangère composite.
 - Le propriétaire d'un souhait ne peut pas lire la ligne de réservation de ce
   souhait. Les requêtes directes et les abonnements Realtime doivent appliquer
   la même restriction ; aucune vue ou fonction ne doit réintroduire l'identité.

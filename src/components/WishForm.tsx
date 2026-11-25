@@ -1,18 +1,29 @@
 import { useEffect, useState, type FormEvent } from "react";
-import type { Wish, WishInput } from "../types/app";
+import type { ChildWishList, Wish, WishInput } from "../types/app";
 import { validateWish } from "../utils/validation";
 
 interface WishFormProps {
   wish?: Wish;
+  childWishLists: ChildWishList[];
+  defaultChildListId?: string | null;
   onSave: (input: WishInput, wishId?: string) => Promise<void>;
   onCancel: () => void;
 }
 
-export function WishForm({ wish, onSave, onCancel }: WishFormProps) {
+export function WishForm({
+  wish,
+  childWishLists,
+  defaultChildListId = null,
+  onSave,
+  onCancel,
+}: WishFormProps) {
   const [title, setTitle] = useState(wish?.title ?? "");
   const [description, setDescription] = useState(wish?.description ?? "");
   const [productUrl, setProductUrl] = useState(wish?.product_url ?? "");
   const [imageUrl, setImageUrl] = useState(wish?.image_url ?? "");
+  const [childListId, setChildListId] = useState(
+    wish?.child_list_id ?? defaultChildListId ?? "",
+  );
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -21,19 +32,23 @@ export function WishForm({ wish, onSave, onCancel }: WishFormProps) {
     setDescription(wish?.description ?? "");
     setProductUrl(wish?.product_url ?? "");
     setImageUrl(wish?.image_url ?? "");
+    setChildListId(wish?.child_list_id ?? defaultChildListId ?? "");
     setError(null);
-  }, [wish]);
+  }, [defaultChildListId, wish]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
     try {
-      const input = validateWish({
-        title,
-        description,
-        productUrl,
-        imageUrl,
-      });
+      const input = {
+        ...validateWish({
+          title,
+          description,
+          productUrl,
+          imageUrl,
+        }),
+        child_list_id: childListId || null,
+      };
       setBusy(true);
       await onSave(input, wish?.id);
       onCancel();
@@ -57,6 +72,20 @@ export function WishForm({ wish, onSave, onCancel }: WishFormProps) {
           onChange={(event) => setTitle(event.target.value)}
         />
       </label>
+      {childWishLists.length > 0 && (
+        <label>
+          Espace
+          <select
+            value={childListId}
+            onChange={(event) => setChildListId(event.target.value)}
+          >
+            <option value="">Ma liste</option>
+            {childWishLists.map((list) => (
+              <option key={list.id} value={list.id}>{list.name}</option>
+            ))}
+          </select>
+        </label>
+      )}
       <label>
         Description <span className="muted">(facultative)</span>
         <textarea
@@ -95,7 +124,13 @@ export function WishForm({ wish, onSave, onCancel }: WishFormProps) {
           Annuler
         </button>
         <button className="button button-primary" disabled={busy}>
-          {busy ? "Enregistrement…" : wish ? "Enregistrer" : "Ajouter à ma liste"}
+          {busy
+            ? "Enregistrement…"
+            : wish
+              ? "Enregistrer"
+              : childListId
+                ? `Ajouter à la liste de ${childWishLists.find((list) => list.id === childListId)?.name ?? "l’enfant"}`
+                : "Ajouter à ma liste"}
         </button>
       </div>
     </form>

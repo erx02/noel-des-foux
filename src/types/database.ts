@@ -42,11 +42,29 @@ export interface Database {
         },
         { display_name?: string; avatar_id?: AvatarId }
       >;
+      child_wish_lists: Table<
+        {
+          id: string;
+          family_id: string;
+          owner_id: string;
+          name: string;
+          created_at: string;
+        },
+        {
+          id?: string;
+          family_id?: string;
+          owner_id?: string;
+          name: string;
+          created_at?: string;
+        },
+        { name?: string }
+      >;
       wishes: Table<
         {
           id: string;
           family_id: string;
           owner_id: string;
+          child_list_id: string | null;
           title: string;
           description: string | null;
           product_url: string | null;
@@ -64,6 +82,7 @@ export interface Database {
           description?: string | null;
           product_url?: string | null;
           image_url?: string | null;
+          child_list_id?: string | null;
           estimated_price_cents?: number | null;
           priority?: "low" | "normal" | "high";
           created_at?: string;
@@ -74,6 +93,7 @@ export interface Database {
           description?: string | null;
           product_url?: string | null;
           image_url?: string | null;
+          child_list_id?: string | null;
           estimated_price_cents?: number | null;
           priority?: "low" | "normal" | "high";
         }

@@ -42,20 +42,23 @@ export async function loadWorkspace(userId: string): Promise<Workspace> {
   if (memberError) throw memberError;
   if (!currentMember) throw new Error("Ton compte n’est associé à aucune famille. Contacte l’administrateur.");
 
-  const [familyResult, membersResult, wishesResult, reservationsResult] = await Promise.all([
+  const [familyResult, membersResult, childWishListsResult, wishesResult, reservationsResult] = await Promise.all([
     db.from("families").select("*").eq("id", currentMember.family_id).single(),
     db.from("family_members").select("*").eq("family_id", currentMember.family_id),
+    db.from("child_wish_lists").select("*").eq("family_id", currentMember.family_id),
     db.from("wishes").select("*").eq("family_id", currentMember.family_id),
     db.from("reservations").select("*").eq("family_id", currentMember.family_id),
   ]);
   if (familyResult.error) throw familyResult.error;
   if (membersResult.error) throw membersResult.error;
+  if (childWishListsResult.error) throw childWishListsResult.error;
   if (wishesResult.error) throw wishesResult.error;
   if (reservationsResult.error) throw reservationsResult.error;
 
   return {
     family: familyResult.data,
     members: membersResult.data,
+    childWishLists: childWishListsResult.data,
     wishes: wishesResult.data,
     reservations: reservationsResult.data,
   };
@@ -66,19 +69,39 @@ export function subscribeToWorkspace(onChange: () => void): RealtimeChannel {
     .channel("family-workspace")
     .on("postgres_changes", { event: "*", schema: "public", table: "families" }, onChange)
     .on("postgres_changes", { event: "*", schema: "public", table: "family_members" }, onChange)
+    .on("postgres_changes", { event: "*", schema: "public", table: "child_wish_lists" }, onChange)
     .on("postgres_changes", { event: "*", schema: "public", table: "wishes" }, onChange)
     .subscribe();
 }
 
 export async function saveWish(input: WishInput, wishId?: string): Promise<void> {
   const db = client();
+  if (input.child_list_id !== null && !isUuid(input.child_list_id)) {
+    throw new Error("Sous-liste invalide.");
+  }
   if (wishId) {
     if (!isUuid(wishId)) throw new Error("Identifiant de souhait invalide.");
     const { error } = await db.from("wishes").update(input).eq("id", wishId);
     if (error) throw error;
     return;
   }
+
   const { error } = await db.from("wishes").insert(input);
+  if (error) throw error;
+}
+
+export async function createChildWishList(name: string): Promise<void> {
+  const trimmed = name.trim();
+  if (trimmed.length < 1 || trimmed.length > 80) {
+    throw new Error("Le nom doit contenir entre 1 et 80 caractères.");
+  }
+  const { error } = await client().from("child_wish_lists").insert({ name: trimmed });
+  if (error) throw error;
+}
+
+export async function removeChildWishList(listId: string): Promise<void> {
+  if (!isUuid(listId)) throw new Error("Identifiant de sous-liste invalide.");
+  const { error } = await client().from("child_wish_lists").delete().eq("id", listId);
   if (error) throw error;
 }
 

@@ -95,6 +95,40 @@ with new_wish as (
 )
 insert into test_fixture_ids select 'wish_b1', id from new_wish;
 
+with new_list as (
+  insert into public.child_wish_lists (family_id, owner_id, name)
+  select (select id from test_fixture_ids where label = 'family_a'),
+         (select id from test_fixture_ids where label = 'a1'), 'Liste enfant A1'
+  returning id
+)
+insert into test_fixture_ids select 'child_list_a1', id from new_list;
+
+with new_list as (
+  insert into public.child_wish_lists (family_id, owner_id, name)
+  select (select id from test_fixture_ids where label = 'family_a'),
+         (select id from test_fixture_ids where label = 'a2'), 'Liste enfant A2'
+  returning id
+)
+insert into test_fixture_ids select 'child_list_a2', id from new_list;
+
+with new_list as (
+  insert into public.child_wish_lists (family_id, owner_id, name)
+  select (select id from test_fixture_ids where label = 'family_b'),
+         (select id from test_fixture_ids where label = 'b1'), 'Liste enfant B1'
+  returning id
+)
+insert into test_fixture_ids select 'child_list_b1', id from new_list;
+
+with new_wish as (
+  insert into public.wishes (family_id, owner_id, child_list_id, title)
+  select (select id from test_fixture_ids where label = 'family_a'),
+         (select id from test_fixture_ids where label = 'a1'),
+         (select id from test_fixture_ids where label = 'child_list_a1'),
+         'Souhait enfant A1'
+  returning id
+)
+insert into test_fixture_ids select 'child_wish_a1', id from new_wish;
+
 select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000002', true);
 
 insert into public.reservations (wish_id)
@@ -105,7 +139,7 @@ select id from test_fixture_ids where label = 'wish_a1';
 
 select set_config('request.jwt.claim.sub', '', true);
 
-select plan(30);
+select plan(37);
 
 select ok(not has_schema_privilege('anon', 'public', 'usage'),
           'anon has no public schema access');
@@ -115,6 +149,8 @@ select ok(not has_table_privilege('anon', 'public.wishes', 'select'),
           'anon has no wish SELECT privilege');
 select ok(not has_table_privilege('anon', 'public.reservations', 'select'),
           'anon has no reservation SELECT privilege');
+select ok(not has_table_privilege('anon', 'public.child_wish_lists', 'select'),
+          'anon has no child wish list SELECT privilege');
 select ok(not has_table_privilege('anon', 'public.wishes', 'insert'),
           'anon has no data INSERT privilege');
 select ok(not has_function_privilege('anon', 'private.current_family_id()', 'execute'),
@@ -128,6 +164,31 @@ select is((select count(*)::integer from public.families
 select is((select count(*)::integer from public.wishes
            where id = (select id from test_fixture_ids where label = 'wish_b1')),
           0, 'family A cannot read family B wishes');
+select is((select count(*)::integer from public.child_wish_lists
+           where id = (select id from test_fixture_ids where label = 'child_list_b1')),
+          0, 'family A cannot read family B child lists');
+select lives_ok(
+  $$insert into public.child_wish_lists (name) values ('Nouvelle sous-liste')$$,
+  'a member can create a child list for their own account'
+);
+select throws_ok(
+  $$insert into public.wishes (title, child_list_id) select 'Liste d’un autre membre', id from test_fixture_ids where label = 'child_list_a2'$$,
+  '23503', null, 'a member cannot assign their wish to another member child list'
+);
+with changed as (
+  update public.child_wish_lists set name = 'Tentative'
+  where id = (select id from test_fixture_ids where label = 'child_list_a2')
+  returning 1
+)
+select is((select count(*)::integer from changed), 0,
+          'a member cannot rename another member child list');
+with deleted as (
+  delete from public.child_wish_lists
+  where id = (select id from test_fixture_ids where label = 'child_list_a2')
+  returning 1
+)
+select is((select count(*)::integer from deleted), 0,
+          'a member cannot delete another member child list');
 select is((select avatar_id from public.family_members where user_id = auth.uid()),
           'santa', 'members receive the default avatar');
 select lives_ok(
@@ -196,6 +257,9 @@ reset role;
 
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000003', true);
+select is((select count(*)::integer from public.wishes
+           where id = (select id from test_fixture_ids where label = 'child_wish_a1')),
+          1, 'another family member can see a child wish');
 select is((select count(*)::integer from public.reservations
            where wish_id = (select id from test_fixture_ids where label = 'wish_a3')),
           0, 'the reservation owner cannot infer reserved status');

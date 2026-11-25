@@ -12,7 +12,8 @@ utilisé.
 - Supabase Auth, PostgreSQL et Realtime.
 - Interface festive responsive avec listes par membre et vue consolidée des
   souhaits de la famille, avatars illustrés personnalisables et formulaires
-  adaptés aux écrans mobiles ; les souhaits n'ont pas de priorité ni de prix.
+  adaptés aux écrans mobiles ; un membre peut séparer ses souhaits dans des
+  sous-listes pour ses enfants ; les souhaits n'ont pas de priorité ni de prix.
 - PostgreSQL RLS et contraintes sont l'autorité de sécurité. Le code du
   navigateur n'est pas une barrière et les règles doivent résister à des appels
   REST directs.
@@ -29,6 +30,8 @@ Voir [l'architecture et le modèle de menace](./docs/architecture.md),
 
 La migration `20261109120000_family_member_avatars.sql` doit être appliquée au
 projet Supabase avant de déployer la version qui permet de choisir un avatar.
+La migration `20261125180000_child_wish_lists.sql` ajoute les sous-listes
+d'enfants et doit aussi être appliquée avant de déployer cette fonctionnalité.
 
 ## Prérequis
 
@@ -55,12 +58,12 @@ projet Supabase avant de déployer la version qui permet de choisir un avatar.
    `anon` du projet Supabase. Ne pas ajouter `.env.local` au dépôt. Aucune
    donnée de famille réelle ne doit être placée dans des fixtures ou exemples.
 
-3. Appliquer la migration à un projet Supabase **vide**. Avec la CLI, exécuter
+3. Appliquer les migrations à un projet Supabase **vide**. Avec la CLI, exécuter
    `supabase login`, puis `supabase link --project-ref <référence-du-projet>` et
-   `supabase db push`, ou appliquer
-   `supabase/migrations/20261109000000_family_gift_lists.sql` dans le SQL Editor
-   Supabase. Ne pas appliquer sans revue cette migration à un projet contenant
-   déjà des tables ou politiques.
+   `supabase db push`, ou appliquer les migrations de
+   `supabase/migrations/` dans l'ordre dans le SQL Editor Supabase. Ne pas
+   appliquer sans revue ces migrations à un projet contenant déjà des tables ou
+   politiques.
 
 4. Lancer l'interface :
 

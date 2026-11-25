@@ -3,6 +3,7 @@ import type { FamilyMember, Reservation, Wish } from "../types/app";
 interface WishCardProps {
   wish: Wish;
   ownerName: string;
+  groupLabel?: string;
   currentUserId: string;
   isOwn: boolean;
   reservation: Reservation | undefined;
@@ -17,6 +18,7 @@ interface WishCardProps {
 export function WishCard({
   wish,
   ownerName,
+  groupLabel,
   currentUserId,
   isOwn,
   reservation,
@@ -41,7 +43,9 @@ export function WishCard({
         </div>
       )}
       <h3>{wish.title}</h3>
-      {!isOwn && <p className="wish-owner">Pour {ownerName}</p>}
+      {(groupLabel || !isOwn) && (
+        <p className="wish-owner">Pour {groupLabel ?? ownerName}</p>
+      )}
       {wish.description && <p className="wish-description">{wish.description}</p>}
       <div className="wish-details">
         {wish.product_url && (

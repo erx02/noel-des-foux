@@ -4,12 +4,14 @@ import type { Database } from "./database";
 
 export type Family = Database["public"]["Tables"]["families"]["Row"];
 export type FamilyMember = Database["public"]["Tables"]["family_members"]["Row"];
+export type ChildWishList = Database["public"]["Tables"]["child_wish_lists"]["Row"];
 export type Wish = Database["public"]["Tables"]["wishes"]["Row"];
 export type Reservation = Database["public"]["Tables"]["reservations"]["Row"];
 
 export interface Workspace {
   family: Family;
   members: FamilyMember[];
+  childWishLists: ChildWishList[];
   wishes: Wish[];
   reservations: Reservation[];
 }
@@ -21,6 +23,7 @@ export interface WishInput {
   description: string | null;
   product_url: string | null;
   image_url: string | null;
+  child_list_id: string | null;
 }
 
 export type { AvatarId };
